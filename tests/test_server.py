@@ -59,20 +59,48 @@ def test_registered_tool_names_cover_the_full_surface() -> None:
         "set_company",
         "list_companies",
         "list_ledgers",
+        "get_ledger",
         "list_vouchers",
         "get_balance_sheet",
         "get_profit_and_loss",
         "get_trial_balance",
         "get_day_book",
         "get_stock_summary",
+        "get_outstanding",
         "get_gstr1_summary",
         "get_gstr3b_summary",
+        "find_gst_mismatches",
         "preview_ledger_change",
         "preview_voucher",
         "confirm_import",
         "raw_gateway_request",
     }
     assert expected.issubset(tool_names)
+
+
+def test_resolve_state_path_honors_env_var(tmp_path, monkeypatch) -> None:
+    """Proves TALLYMIND_STATE_PATH is genuinely read (Important #1), not silently
+    ignored the way `_STATE_PATH = DEFAULT_STATE_PATH` was before this fix. The
+    `_isolated_state` autouse fixture monkeypatches `server._STATE_PATH` directly
+    (post-import), so it can't mask an env-var-reading regression here — this test
+    instead calls `_resolve_state_path()` directly with the env var set, which is
+    the same expression the module evaluates at import time to set `_STATE_PATH`.
+    """
+    custom = tmp_path / "custom.json"
+    monkeypatch.setenv("TALLYMIND_STATE_PATH", str(custom))
+    assert server._resolve_state_path() == custom
+
+
+def test_resolve_state_path_expands_user(monkeypatch) -> None:
+    monkeypatch.setenv("TALLYMIND_STATE_PATH", "~/custom-tallymind-state.json")
+    resolved = server._resolve_state_path()
+    assert "~" not in str(resolved)
+    assert resolved.name == "custom-tallymind-state.json"
+
+
+def test_resolve_state_path_falls_back_to_default_when_unset(monkeypatch) -> None:
+    monkeypatch.delenv("TALLYMIND_STATE_PATH", raising=False)
+    assert server._resolve_state_path() == server.DEFAULT_STATE_PATH
 
 
 def test_set_connection_then_tally_doctor_reports_reachable() -> None:

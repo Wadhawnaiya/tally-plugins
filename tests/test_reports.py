@@ -93,3 +93,62 @@ def test_gstr1_summary_marked_best_effort() -> None:
     gateway.export_report.assert_called_once_with("GSTR-1", company=None)
     assert result["best_effort"] is True
     assert "not officially documented" in result["note"]
+
+
+def test_gstr3b_summary_marked_best_effort() -> None:
+    gateway = _mock_gateway("<ENVELOPE/>")
+    result = reports.get_gstr3b_summary(gateway, period="202604")
+    gateway.export_report.assert_called_once_with("GSTR-3B", company=None)
+    assert result["best_effort"] is True
+    assert "not officially documented" in result["note"]
+
+
+def test_get_outstanding_uses_named_report_export() -> None:
+    gateway = _mock_gateway("<ENVELOPE/>")
+    reports.get_outstanding(gateway, company="Demo")
+    gateway.export_report.assert_called_once_with("Bills Outstanding", company="Demo")
+
+
+def test_get_outstanding_is_not_marked_best_effort() -> None:
+    gateway = _mock_gateway("<ENVELOPE/>")
+    result = reports.get_outstanding(gateway)
+    assert "best_effort" not in result
+
+
+def test_get_ledger_returns_single_best_match() -> None:
+    gateway = _mock_gateway(LEDGER_SQL_XML)
+    result = reports.get_ledger(gateway, name="VRO")
+    gateway.sql.assert_called_once()
+    assert result["ledger"] is not None
+    assert result["ledger"]["name"] == "VRO Technology"
+    assert result["ledger"] in result["ledgers"]
+
+
+def test_get_ledger_reuses_list_ledgers_without_a_second_gateway_call() -> None:
+    gateway = _mock_gateway(LEDGER_SQL_XML)
+    reports.get_ledger(gateway, name="VRO")
+    gateway.sql.assert_called_once()
+    gateway.export_collection.assert_not_called()
+    gateway.export_report.assert_not_called()
+
+
+def test_get_ledger_returns_none_when_no_match() -> None:
+    gateway = _mock_gateway(LEDGER_SQL_XML)
+    result = reports.get_ledger(gateway, name="Totally Unrelated Party Name")
+    assert result["ledger"] is None
+
+
+def test_find_gst_mismatches_is_best_effort_and_assembles_comparison_inputs() -> None:
+    gateway = _mock_gateway("<ENVELOPE/>")
+    result = reports.find_gst_mismatches(gateway, period="202604", company="Demo")
+    assert result["best_effort"] is True
+    assert result["period"] == "202604"
+    assert "empirically-validated" in result["note"]
+    assert result["gstr1_summary"]["best_effort"] is True
+    assert result["gstr3b_summary"]["best_effort"] is True
+    assert "day_book" in result
+    assert gateway.export_report.call_args_list == [
+        (("GSTR-1",), {"company": "Demo"}),
+        (("GSTR-3B",), {"company": "Demo"}),
+        (("Day Book",), {"company": "Demo"}),
+    ]

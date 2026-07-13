@@ -7,6 +7,7 @@ functions, every tool returns a JSON string via `json.dumps`.
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 from typing import Any
 
@@ -16,7 +17,14 @@ from tallymind import diagnostics, reports, writes
 from tallymind.gateway import TallyGateway
 from tallymind.state import DEFAULT_STATE_PATH, TallyMindState, TallyMindStateStore
 
-_STATE_PATH: Path = DEFAULT_STATE_PATH
+
+def _resolve_state_path() -> Path:
+    """Honor TALLYMIND_STATE_PATH when set, matching itr-mcp's ITR_PLUGIN_OUTPUT_DIR pattern."""
+    override = os.environ.get("TALLYMIND_STATE_PATH")
+    return Path(override).expanduser() if override else DEFAULT_STATE_PATH
+
+
+_STATE_PATH: Path = _resolve_state_path()
 
 mcp = FastMCP(
     "TallyMind",
@@ -53,7 +61,7 @@ async def set_connection(host: str, port: int = 9000) -> str:
     state.host = host
     state.port = port
     store.save(state)
-    return json.dumps({"host": host, "port": port}, indent=2)
+    return json.dumps({"host": host, "port": port}, indent=2, ensure_ascii=False)
 
 
 @mcp.tool()
@@ -63,7 +71,7 @@ async def set_company(name: str) -> str:
     state = store.load()
     state.company = name
     store.save(state)
-    return json.dumps({"company": name}, indent=2)
+    return json.dumps({"company": name}, indent=2, ensure_ascii=False)
 
 
 @mcp.tool()
@@ -78,6 +86,14 @@ async def list_ledgers(query: str = "") -> str:
     """List ledgers, optionally fuzzy-filtered by a name query (e.g. 'VRO' matches 'VRO Technology')."""
     gateway, state = _gateway_from_state()
     result = reports.list_ledgers(gateway, query=query or None, company=state.company)
+    return json.dumps(result, indent=2, ensure_ascii=False)
+
+
+@mcp.tool()
+async def get_ledger(name: str) -> str:
+    """Fetch a single ledger by (fuzzy) name, e.g. 'VRO' matches 'VRO Technology'."""
+    gateway, state = _gateway_from_state()
+    result = reports.get_ledger(gateway, name=name, company=state.company)
     return json.dumps(result, indent=2, ensure_ascii=False)
 
 
@@ -124,6 +140,13 @@ async def get_stock_summary() -> str:
 
 
 @mcp.tool()
+async def get_outstanding() -> str:
+    """Export Bills Outstanding (overdue debtors/creditors) for the active company."""
+    gateway, state = _gateway_from_state()
+    return json.dumps(reports.get_outstanding(gateway, company=state.company), indent=2, ensure_ascii=False)
+
+
+@mcp.tool()
 async def get_gstr1_summary(period: str) -> str:
     """Best-effort GSTR-1 summary for a period (format YYYYMM). Validate against Tally's own screen."""
     gateway, state = _gateway_from_state()
@@ -136,6 +159,20 @@ async def get_gstr3b_summary(period: str) -> str:
     """Best-effort GSTR-3B summary for a period (format YYYYMM). Validate against Tally's own screen."""
     gateway, state = _gateway_from_state()
     result = reports.get_gstr3b_summary(gateway, period=period, company=state.company)
+    return json.dumps(result, indent=2, ensure_ascii=False)
+
+
+@mcp.tool()
+async def find_gst_mismatches(period: str) -> str:
+    """Best-effort GST reconciliation MVP for a period (format YYYYMM).
+
+    Does not auto-detect mismatches (Tally's GSTR export XML field names
+    aren't reliably parseable yet). Instead assembles the GSTR-1 summary,
+    GSTR-3B summary, and Day Book for the period side-by-side so a CA can
+    review them together.
+    """
+    gateway, state = _gateway_from_state()
+    result = reports.find_gst_mismatches(gateway, period=period, company=state.company)
     return json.dumps(result, indent=2, ensure_ascii=False)
 
 
@@ -178,13 +215,15 @@ async def confirm_import_tool(preview_id: str) -> str:
     preview as consumed, so a retry re-previews instead of risking a duplicate
     POST to Tally.
     """
-    gateway, _state = _gateway_from_state()
     store = _store()
     state = store.load()
+    gateway = TallyGateway(host=state.host, port=state.port)
     try:
         result = writes.confirm_import(state, gateway, preview_id, persist=lambda: store.save(state))
     except KeyError:
-        return json.dumps({"error": "unknown_or_expired_preview_id", "preview_id": preview_id}, indent=2)
+        return json.dumps(
+            {"error": "unknown_or_expired_preview_id", "preview_id": preview_id}, indent=2, ensure_ascii=False
+        )
     store.save(state)
     return json.dumps(result, indent=2, ensure_ascii=False)
 

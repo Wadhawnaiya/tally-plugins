@@ -12,6 +12,21 @@ Query sources, by confidence level:
     spec section 9, "Open risk"). These call export_report with the report
     names Tally's own UI uses ("GSTR-1", "GSTR-3B") and must be validated
     against a live Tally instance before being trusted.
+  - get_outstanding: same named-report-export mechanism as the Balance Sheet
+    / P&L / Trial Balance / Day Book / Stock Summary group above ("Bills
+    Outstanding" is TallyPrime's standard report name under Display >
+    Statement of Accounts > Outstanding) — not best_effort, for the same
+    reason those five aren't.
+  - get_ledger: thin wrapper over list_ledgers, reshaping its result to a
+    single-ledger shape. Does not issue a second gateway call.
+  - find_gst_mismatches: BEST EFFORT, and deliberately more limited than its
+    name suggests. It does not (yet) diff numeric fields between books and
+    GST returns — the underlying GSTR field names aren't reliably parseable
+    (see get_gstr1_summary above), so automated mismatch detection would
+    mean fabricating precision the codebase doesn't have. Instead it
+    assembles the two comparison inputs (GST return summary + Day Book) for
+    a human (CA) to review side-by-side. See its docstring for the full
+    rationale.
 """
 
 from __future__ import annotations
@@ -136,4 +151,64 @@ def get_gstr3b_summary(gateway: TallyGateway, period: str, company: str | None =
         "validate this output against Tally's own GSTR-3B screen before relying on it."
     )
     result["period"] = period
+    return result
+
+
+def get_outstanding(gateway: TallyGateway, company: str | None = None) -> dict[str, Any]:
+    """Export Bills Outstanding (Display > Statement of Accounts > Outstanding).
+
+    Uses the same named-report-export mechanism as the other five report
+    tools above and, like them, is not marked best_effort.
+    """
+    return _named_report(gateway, "Bills Outstanding", company)
+
+
+def get_ledger(gateway: TallyGateway, name: str, company: str | None = None) -> dict[str, Any]:
+    """Fetch a single ledger by (fuzzy) name. Thin wrapper over list_ledgers.
+
+    Reuses list_ledgers's SQL query and fuzzy matching rather than issuing a
+    second gateway call, and reshapes the result with a top-level "ledger"
+    key set to the best match (or None if nothing matched) so callers get a
+    direct single-ledger shape instead of always unwrapping a list.
+    """
+    result = list_ledgers(gateway, query=name, company=company)
+    ledgers = result.get("ledgers", [])
+    result["ledger"] = ledgers[0] if ledgers else None
+    return result
+
+
+def find_gst_mismatches(gateway: TallyGateway, period: str, company: str | None = None) -> dict[str, Any]:
+    """Assemble GST-return-vs-books comparison inputs for a period. BEST EFFORT.
+
+    Deliberately does NOT attempt automated field-level mismatch detection
+    (e.g. "3 mismatches found"): get_gstr1_summary/get_gstr3b_summary are
+    already best_effort because Tally does not publicly document GSTR
+    export XML field names, so this codebase cannot currently parse out
+    specific numeric fields (turnover, tax liability, etc.) with any
+    reliability. Auto-diffing on top of that would mean either fabricating
+    fake-precise output from unreliable parsing or silently returning wrong
+    answers — both contradict this project's design philosophy (see the
+    Educational-edition-detection precedent in diagnostics.py, which uses an
+    honest static explanation instead of a fake capability).
+
+    Instead, this returns the GSTR-1 summary, GSTR-3B summary, and Day Book
+    for the period side-by-side, so a CA can do the comparison manually —
+    a genuinely useful MVP (it saves pulling the reports separately) without
+    overclaiming a capability the codebase doesn't have yet.
+    """
+    result: dict[str, Any] = {
+        "best_effort": True,
+        "period": period,
+        "note": (
+            "Automated field-level GST mismatch detection is not yet implemented: it needs "
+            "empirically-validated GSTR field names, which are not available because Tally does not "
+            "publicly document the GSTR-1/GSTR-3B export XML field names (same caveat as "
+            "get_gstr1_summary/get_gstr3b_summary's notes). For now this tool assembles the comparison "
+            "inputs — the GST return summary and the Day Book for the period — for a CA to review "
+            "side-by-side, rather than claiming to auto-detect mismatches it can't yet reliably compute."
+        ),
+        "gstr1_summary": get_gstr1_summary(gateway, period=period, company=company),
+        "gstr3b_summary": get_gstr3b_summary(gateway, period=period, company=company),
+        "day_book": get_day_book(gateway, company=company),
+    }
     return result
