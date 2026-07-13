@@ -1,7 +1,7 @@
 {
   "mcpServers": {
     "tallymind": {
-      "command": "python3",
+      "command": "python",
       "args": ["-m", "tallymind.server"],
       "cwd": ".",
       "env": {
