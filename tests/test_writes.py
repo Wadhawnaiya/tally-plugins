@@ -90,3 +90,17 @@ def test_confirm_import_cannot_be_replayed() -> None:
     confirm_import(state, gateway, preview["preview_id"])
     with pytest.raises(KeyError):
         confirm_import(state, gateway, preview["preview_id"])
+
+
+def test_confirm_import_calls_persist_before_gateway_post() -> None:
+    state = TallyMindState()
+    preview = preview_ledger_change(state, "VRO Technology", "Sundry Debtors", company="Demo")
+    gateway = MagicMock(spec=TallyGateway)
+    gateway.import_data.side_effect = RuntimeError("network died mid-post")
+    persist = MagicMock()
+
+    with pytest.raises(RuntimeError):
+        confirm_import(state, gateway, preview["preview_id"], persist=persist)
+
+    persist.assert_called_once()
+    assert preview["preview_id"] not in state.pending_previews  # preview stayed popped even though the POST failed

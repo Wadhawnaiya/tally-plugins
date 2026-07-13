@@ -3,11 +3,10 @@
 from __future__ import annotations
 
 from html import escape
-from typing import Any
+from typing import Any, Callable
 
 from tallymind.gateway import TallyGateway
 from tallymind.state import TallyMindState
-from tallymind.xml_requests import import_data_envelope
 
 
 def _tag(name: str, value: Any = None) -> str:
@@ -100,8 +99,15 @@ def preview_voucher(
     return {"preview_id": preview_id, "description": description, "xml": xml}
 
 
-def confirm_import(state: TallyMindState, gateway: TallyGateway, preview_id: str) -> dict[str, Any]:
+def confirm_import(
+    state: TallyMindState,
+    gateway: TallyGateway,
+    preview_id: str,
+    persist: Callable[[], None] | None = None,
+) -> dict[str, Any]:
     entry = state.pop_preview(preview_id)  # raises KeyError if missing/already used — fails closed
+    if persist is not None:
+        persist()
     report_name = "Vouchers" if entry["kind"] == "voucher" else "All Masters"
     response = gateway.import_data(entry["xml"], company=entry["company"], report_name=report_name)
     return {
