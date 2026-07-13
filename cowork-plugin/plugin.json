@@ -1,0 +1,27 @@
+{
+  "name": "tallymind-mcp-plugin",
+  "version": "0.1.0",
+  "description": "MCP plugin connecting TallyPrime to Claude via its HTTP/XML gateway, with diagnostics, GST tools, and guarded writes.",
+  "author": {
+    "name": "CA Shailesh S Wadhawaniya",
+    "email": "ca@tallymind.local"
+  },
+  "license": "Proprietary",
+  "keywords": ["tally", "tallyprime", "accounting", "gst", "mcp", "india"],
+  "skills": "./skills/",
+  "mcpServers": "./mcp_config.json",
+  "interface": {
+    "displayName": "TallyMind MCP",
+    "shortDescription": "Talk to TallyPrime in plain English from Claude.",
+    "longDescription": "Connects Claude to a local TallyPrime instance over its HTTP/XML gateway: connection diagnostics, ledgers/vouchers/reports/GST summaries with fuzzy name search, and guarded preview-then-confirm writes.",
+    "developerName": "CA Shailesh S Wadhawaniya",
+    "category": "Finance",
+    "capabilities": ["Interactive", "LocalFiles"],
+    "brandColor": "#0F766E",
+    "defaultPrompt": [
+      "Using TallyMind, run tally_doctor and tell me if I'm connected.",
+      "Which clients have GST mismatches this quarter?",
+      "Show me overdue debtors past 90 days."
+    ]
+  }
+}

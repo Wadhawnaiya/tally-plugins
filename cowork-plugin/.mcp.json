@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "tallymind": {
+      "command": "python3",
+      "args": ["-m", "tallymind.server"],
+      "cwd": ".",
+      "env": {
+        "TALLYMIND_STATE_PATH": "${HOME}/.tallymind/state.json"
+      }
+    }
+  }
+}
