@@ -6,7 +6,7 @@
     "name": "CA Shailesh S Wadhawaniya",
     "email": "ca@tallymind.local"
   },
-  "license": "Proprietary",
+  "license": "MIT",
   "keywords": ["tally", "tallyprime", "accounting", "gst", "mcp", "india"],
   "skills": "./skills/",
   "mcpServers": "./mcp_config.json",
