@@ -1,19 +1,31 @@
-# TallyMind MCP
+# TallyMind — a Claude plugin bundle for TallyPrime
 
-**Talk to your TallyPrime books in plain English, from Claude.**
+**Talk to your TallyPrime books in plain English, from Claude — and turn a client's invoices,
+bank statements, and receipts into vouchers.**
 
-TallyMind is a free, open-source [MCP](https://modelcontextprotocol.io) server that connects
-Claude to a local TallyPrime installation. Ask questions, pull reports, check GST returns, turn a
-client's invoices and bank statements into vouchers, and (with your explicit confirmation, every
-time) post entries — all in conversation, with nothing installed by hand and nothing sent
+This repo, `tally-plugins`, is not just an MCP server — it's a full Claude plugin bundle for
+working with TallyPrime. It's free and open-source, and contains everything the bundle needs in
+one place:
+
+- an **MCP server** (`tallymind`) that gives Claude a safe, guarded connection to a local
+  TallyPrime install over TallyPrime's own [MCP](https://modelcontextprotocol.io)/HTTP-XML
+  gateway
+- two **Claude skills** built on top of it — `tally-mind` for conversational reading and guarded
+  writing, and `tally-doc-import` for turning a client's raw documents into GST-correct vouchers
+- supporting **scripts** (e.g. a dependency-free spreadsheet reader) and **assets** those skills
+  rely on
+
+All of it — skills, MCP server, scripts, and config — installs as one plugin. Nothing is sent
 anywhere except your own computer and Tally.
 
 ```powershell
-irm https://raw.githubusercontent.com/Wadhawnaiya/tally-mcp/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/Wadhawnaiya/tally-plugins/main/install.ps1 | iex
 ```
 
-That one line is the entire install. No zip files, no editing config JSON by hand, no guessing
-paths. Paste it into PowerShell, press Enter, and follow along — details below.
+That one line installs the `tallymind` MCP server itself and registers it with Claude — no zip
+files, no editing config JSON by hand, no guessing paths. To also get the two Claude skills
+(the parts that teach Claude *how* to use the MCP server well), install the full plugin bundle —
+see [Install](#install) below for both routes.
 
 ---
 
@@ -154,11 +166,15 @@ conventions it follows.
 
 ## Install
 
+There are two routes in, and they're complementary rather than either/or — most people want both.
+
+### Route 1: the MCP server (PowerShell, one line)
+
 Open TallyPrime, load your company, and make sure the gateway setting above is on. Then open
 **PowerShell** and run:
 
 ```powershell
-irm https://raw.githubusercontent.com/Wadhawnaiya/tally-mcp/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/Wadhawnaiya/tally-plugins/main/install.ps1 | iex
 ```
 
 Here's exactly what that one line does, step by step, so nothing is a mystery:
@@ -176,6 +192,22 @@ Here's exactly what that one line does, step by step, so nothing is a mystery:
 
 When it finishes, **fully quit Claude Desktop** (from the system tray, not just closing the
 window) and reopen it, so it picks up the new server.
+
+This route gets you the raw MCP tools (`tally_doctor`, `list_ledgers`, `preview_voucher`, and so
+on) — enough for Claude to read and write your books if you describe what you want in detail.
+
+### Route 2: the full plugin bundle (skills included)
+
+The two Claude skills — `tally-mind` and `tally-doc-import` — are what teach Claude the actual
+*procedure* for using those MCP tools well (which order to call them in, the sign convention for
+voucher entries, GST ledger conventions, the preview-then-confirm discipline). They ship as
+`cowork-plugin/` in this repo, pre-packaged as a zip under `dist/` (e.g.
+`tallymind-cowork-plugin-v0.2.0.zip`) containing the MCP server config, both skills, and their
+supporting scripts/references together.
+
+Install that zip as a plugin in Claude (Desktop or Code) the same way you'd install any other
+Claude plugin bundle — this is what actually gets you `tally-doc-import`'s document-to-voucher
+workflow, not just the bare tools.
 
 ## Check it's working
 

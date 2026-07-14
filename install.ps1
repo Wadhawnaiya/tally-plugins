@@ -21,7 +21,7 @@
 #       of crashing on a raw [int] cast.
 #
 # TallyMind one-command installer
-# Usage: irm https://raw.githubusercontent.com/Wadhawnaiya/tally-mcp/main/install.ps1 | iex
+# Usage: irm https://raw.githubusercontent.com/Wadhawnaiya/tally-plugins/main/install.ps1 | iex
 
 $ErrorActionPreference = "Stop"
 
@@ -73,7 +73,7 @@ if (-not $git) {
     throw "git is not available, but it is required to install tallymind from GitHub. Install Git for Windows from https://git-scm.com/download/win and re-run this script."
 }
 python -m pip install --upgrade pip | Out-Null
-python -m pip install "git+https://github.com/Wadhawnaiya/tally-mcp.git"
+python -m pip install "git+https://github.com/Wadhawnaiya/tally-plugins.git"
 if ($LASTEXITCODE -ne 0) {
     throw "pip install failed (exit code $LASTEXITCODE). Check the error above, make sure git is installed, and re-run this script."
 }
