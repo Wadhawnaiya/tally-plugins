@@ -3,9 +3,10 @@
 **Talk to your TallyPrime books in plain English, from Claude.**
 
 TallyMind is a free, open-source [MCP](https://modelcontextprotocol.io) server that connects
-Claude to a local TallyPrime installation. Ask questions, pull reports, check GST returns, and
-(with your explicit confirmation, every time) post entries — all in conversation, with nothing
-installed by hand and nothing sent anywhere except your own computer and Tally.
+Claude to a local TallyPrime installation. Ask questions, pull reports, check GST returns, turn a
+client's invoices and bank statements into vouchers, and (with your explicit confirmation, every
+time) post entries — all in conversation, with nothing installed by hand and nothing sent
+anywhere except your own computer and Tally.
 
 ```powershell
 irm https://raw.githubusercontent.com/Wadhawnaiya/tally-mcp/main/install.ps1 | iex
@@ -22,6 +23,7 @@ paths. Paste it into PowerShell, press Enter, and follow along — details below
 - [What makes TallyMind different](#what-makes-tallymind-different)
 - [What data it can see and touch inside Tally](#what-data-it-can-see-and-touch-inside-tally)
 - [What you can ask it to do](#what-you-can-ask-it-to-do)
+- [Importing a client's documents](#importing-a-clients-documents)
 - [Requirements](#requirements)
 - [Install](#install)
 - [Check it's working](#check-its-working)
@@ -116,6 +118,30 @@ anyone who wants the full picture.
 **Escape hatch**
 - `raw_gateway_request` — send a raw XML request directly, for anything the above doesn't cover
 
+## Importing a client's documents
+
+Alongside `tally-mind`, this plugin ships a second skill, `tally-doc-import`,
+for turning a client's actual paperwork into vouchers instead of drafting
+them by hand one at a time.
+
+Point it at a folder of a client's documents for a period — invoices,
+purchase bills, bank statements, expense receipts, credit/debit notes, in
+whatever mix of PDF, scanned image, or Excel/CSV they happen to arrive in —
+and ask Claude to process it. It reads every document, works out what kind
+of transaction each one is, splits out GST correctly (CGST/SGST or IGST,
+matched to the client's actual tax ledgers), and drafts any ledgers that
+don't exist yet.
+
+It uses exactly the same guarded write path as everything else in this
+document: nothing is posted to Tally until every drafted voucher and ledger
+has been shown to you in one consolidated batch and you've explicitly
+approved it. Nothing new to trust here beyond `preview_*` → `confirm_import`
+— this skill just does the drafting work that used to be manual.
+
+See `cowork-plugin/skills/tally-doc-import/SKILL.md` for the full workflow,
+and its `references/` for the voucher-type mapping and GST ledger
+conventions it follows.
+
 ## Requirements
 
 - **TallyPrime, Silver or Gold edition** — not the Educational edition, which silently truncates
@@ -169,6 +195,8 @@ loaded, and a reminder about the Educational-edition caveat above.
   can compare them."
 - "Preview a sales voucher dated today for ₹10,000 against VRO Technology, then show me the
   preview before you touch anything."
+- "Process the invoices and bank statement in C:\Clients\VRO Technology\July, then show me the
+  batch before posting anything."
 
 ## How the safety model works
 

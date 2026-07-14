@@ -27,3 +27,20 @@ def test_skill_md_exists_and_names_the_plugin() -> None:
     content = (PLUGIN_DIR / "skills" / "tally-mind" / "SKILL.md").read_text(encoding="utf-8")
     assert "tally-mind" in content
     assert "tally_doctor" in content
+
+
+def test_doc_import_skill_exists_and_references_its_bundled_files() -> None:
+    skill_dir = PLUGIN_DIR / "skills" / "tally-doc-import"
+    content = (skill_dir / "SKILL.md").read_text(encoding="utf-8")
+    assert "tally-doc-import" in content
+    assert "preview_voucher" in content
+    assert "confirm_import" in content
+
+    referenced = [
+        "references/voucher-mapping.md",
+        "references/gst-and-ledgers.md",
+        "scripts/xlsx_to_csv.py",
+    ]
+    for relative_path in referenced:
+        assert relative_path in content
+        assert (skill_dir / relative_path).is_file()
