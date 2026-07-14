@@ -209,6 +209,14 @@ Install that zip as a plugin in Claude (Desktop or Code) the same way you'd inst
 Claude plugin bundle — this is what actually gets you `tally-doc-import`'s document-to-voucher
 workflow, not just the bare tools.
 
+### Try it without a real client's documents
+
+`demo/` ships a complete fictitious client — invoices, bills, a credit note, a debit note, a cash
+receipt, and a bank statement — sized to exercise every voucher type `tally-doc-import` handles.
+Point it at a **throwaway/test Tally company**, not real books, and follow
+[`demo/README.md`](demo/README.md) end to end: process the folder, review the batch, confirm, then
+check the result with `tally-mind`.
+
 ## Check it's working
 
 Ask Claude:

@@ -24,9 +24,10 @@ not "2025-07-14"; a percentage as "0.18", not "18%"). Treat any
 suspicious-looking integer next to a column named "date" as a formatted
 value and cross-check it against the source document before trusting it.
 
-Cells whose value is stored inline (t="inlineStr", value under <is><t>
-rather than <v>) are not handled and will read as empty — rare in
-Excel-generated files, more common in some third-party export tools.
+Handles both shared-string cells (t="s", the usual case for files saved
+from Excel/LibreOffice) and inline-string cells (t="inlineStr", value under
+<is><t> rather than a sharedStrings.xml lookup) — openpyxl, a common
+Python library for generating .xlsx exports, defaults to inline strings.
 """
 
 from __future__ import annotations
@@ -75,12 +76,19 @@ def _sheet_rows(zf: zipfile.ZipFile, sheet_path: str, shared: list[str]) -> list
             ref = cell.get("r", "A1")
             col_idx = _col_to_index(ref)
             max_col = max(max_col, col_idx)
+            cell_type = cell.get("t")
+            if cell_type == "inlineStr":
+                is_el = cell.find("m:is", NS)
+                row_cells[col_idx] = (
+                    "".join(t.text or "" for t in is_el.findall(".//m:t", NS)) if is_el is not None else ""
+                )
+                continue
             value_el = cell.find("m:v", NS)
             if value_el is None:
                 row_cells[col_idx] = ""
                 continue
             raw = value_el.text or ""
-            if cell.get("t") == "s":
+            if cell_type == "s":
                 row_cells[col_idx] = shared[int(raw)] if raw.isdigit() else ""
             else:
                 row_cells[col_idx] = raw
