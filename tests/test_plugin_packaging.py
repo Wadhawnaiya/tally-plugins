@@ -5,7 +5,7 @@ PLUGIN_DIR = Path(__file__).resolve().parents[1] / "cowork-plugin"
 
 
 def test_plugin_json_is_valid_and_points_at_mcp_config() -> None:
-    data = json.loads((PLUGIN_DIR / "plugin.json").read_text(encoding="utf-8"))
+    data = json.loads((PLUGIN_DIR / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8"))
     assert data["name"] == "tallymind-mcp-plugin"
     assert data["mcpServers"] == "./mcp_config.json"
     assert data["skills"] == "./skills/"

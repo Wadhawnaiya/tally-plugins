@@ -47,7 +47,7 @@ first, that's the one thing in this demo that should *not* happen.
   [README](../README.md#requirements)), and a company loaded — **use a
   throwaway/test company for this demo**, not a real client's books, since
   it will actually create ledgers and post vouchers.
-- The `tally-plugins` cowork-plugin installed in Claude (Desktop or Code),
+- The `tally-plugins` cowork-plugin installed in Claude (Desktop, Code, or Cowork),
   with `tallymind` connected (`tally_doctor` should report ready).
 
 ## Running the demo
